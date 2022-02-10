@@ -10,8 +10,8 @@ Script for simulating vortex interactions in 2D.
 import numpy as np
 import matplotlib.pyplot as plt
 
-dt = 10 # Adjust this
-Nsteps = 100 # Adjust this
+dt = 5
+Nsteps = 50
 
 ## Setting up initial conditions
 # Vortex rings
@@ -19,10 +19,10 @@ Nsteps = 100 # Adjust this
 y_v = np.array([-50,50,-50,50], dtype="f") # y positions of vortices
 x_v = np.array([-50,-50,50,50], dtype="f") # x positions of vortices
 
-k_v = np.array(50) # Line vortex constant
+k_v = np.array(40) # Line vortex constant
 
 # Set orientations of vortices: +1 is out of the page, -1 is into the page
-orientations = np.array([1, 1, -1, -1])
+orientations = np.array([1, -1, 1, -1])
 
 # Set up the plot
 plt.ion()
@@ -31,7 +31,7 @@ fig, ax = plt.subplots( 1 , 1 )
 fig.set_size_inches(10, 10)
 
 # Mark position of vortices
-p, = ax.plot(x_v, y_v, "k.", markersize=10)
+p, = ax.plot(x_v, y_v, "k+", markersize=10)
 
 ngrid = 200
 res = 360j
@@ -69,8 +69,6 @@ def calculate_velocity(vortex_x, vortex_y, x, y, r_mask=0, orientation=1):
         the vortex is oriented out of the page (1) or into the page (-1)
 
     """
-    # Get position of this vortex
-    r_vortex = np.sqrt(vortex_x**2+vortex_y**2) # distance between vortex and origin
 
     # Get distance between all points and vortex
     r = np.sqrt((x-vortex_x)**2 + (y-vortex_y)**2) # unmasked version
@@ -108,11 +106,14 @@ while count < Nsteps:
 
     ## compute and update total velocity
     for i in range(len(x_v)):
+
+        # Add contribution of this vortex to the total velocity field
         v = calculate_velocity(x_v[i], y_v[i], X, Y, orientation=orientations[i], r_mask=r_mask)
         vel_x += v["vel_x"]
         vel_y += v["vel_y"]
 
-        for k in range(len(x_v)): ## find velocities affecting every other vortex
+        # Find velocities affecting every other vortex
+        for k in range(len(x_v)):
             if k != i:
                 # get indices corresponding to kth vortex in the grid
                 x_index = int(x_v[k]/increment)
@@ -124,8 +125,8 @@ while count < Nsteps:
                 else: u_x_v[k] += v["vel_x"][x_index, y_index]
 
                 if x_v[k] >= x_v[i]: # if vortex is to the right of main one
-                    u_y_v[k] += v["vel_y"][x_index, y_index]
-                else: u_y_v[k] -= v["vel_y"][x_index, y_index]
+                    u_y_v[k] -= v["vel_y"][x_index, y_index]
+                else: u_y_v[k] += v["vel_y"][x_index, y_index]
 
     # Plot streamlines
     ax.streamplot(X, Y, vel_x, vel_y, density=[1,1], color="b")
@@ -139,7 +140,7 @@ while count < Nsteps:
 
     # plot
     fig.canvas.draw()
-    plt.pause(0.0001)
+    plt.pause(0.001)
 
     # clear screen
     ax.collections = []
